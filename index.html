@@ -566,7 +566,7 @@ function renderKidSelect() {
       <div style="font-size:13px;color:#71717a;margin-bottom:12px">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</div>
 
       <button class="kid-btn freddy" id="btn-freddy">
-        <div class="k-emoji">🦊</div>
+        <div class="k-emoji">${KIDS.freddy.emoji}</div>
         <div style="flex:1">
           <div class="k-name">Freddy</div>
           <div class="k-status">${f.done}/${f.total} chores done today</div>
@@ -575,7 +575,7 @@ function renderKidSelect() {
       </button>
 
       <button class="kid-btn claire" id="btn-claire">
-        <div class="k-emoji">🌸</div>
+        <div class="k-emoji">${KIDS.claire.emoji}</div>
         <div style="flex:1">
           <div class="k-name">Claire</div>
           <div class="k-status">${c.done}/${c.total} chores done today</div>

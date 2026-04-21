@@ -397,7 +397,16 @@ function getChoresForKid(kidId, ds) {
     else if (chore.who === 'each') assigned = true;
     else if (chore.who === 'shared') {
       const e = plan[chore.id];
-      assigned = e && e.kid === kidId;
+      if (e) {
+        assigned = e.kid === kidId;
+      } else {
+        // Plan entry missing (stale Firestore snapshot). Use same deterministic
+        // formula as generatePlan() so a missing entry never silently drops chores.
+        const weekNum = Math.floor(new Date(ws + 'T12:00:00').getTime() / (7 * 86400000));
+        const sharedChores = CHORES.filter(c => c.who === 'shared');
+        const idx = sharedChores.indexOf(chore);
+        assigned = ((weekNum + idx) % 2 === 0) ? kidId === 'freddy' : kidId === 'claire';
+      }
     }
     else if (chore.who === 'split') {
       const entries = plan['feed-birds'] || [];
@@ -835,9 +844,9 @@ function renderHistory() {
       days.forEach(ds => {
         getChoresForKid(kidId, ds).forEach(c => {
           if (c.schedule === 'weekend') {
-            const sat = saturdayOf(ds);
-            if (!sat || seenWeekendLaundry.has(sat+c.id)) return;
-            seenWeekendLaundry.add(sat+c.id);
+            const wk = weekStart(ds);
+            if (seenWeekendLaundry.has(wk+c.id)) return;
+            seenWeekendLaundry.add(wk+c.id);
           }
           total++;
           if (c.done) done++;

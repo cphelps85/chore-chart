@@ -143,7 +143,7 @@ const firebaseConfig = {
 };
 
 const IS_DEV    = window.location.protocol === 'file:';
-const DB_PREFIX = IS_DEV ? 'dev_chore_' : 'chore_';
+const DB_PREFIX = IS_DEV ? 'dev_' : '';
 
 const fbApp = initializeApp(firebaseConfig);
 const auth  = getAuth(fbApp);
@@ -210,6 +210,8 @@ let weeklyPlans = {};   // { weekStart: planObj }
 let choreLog    = {};   // { dateStr: { 'freddy-backpack': {done,ts}, ... } }
 
 // ── Firestore helpers ─────────────────────────────────────────────────
+// Nest under existing users/{uid} path so existing Firestore rules apply.
+// Subcollections are prefixed with chore_ to avoid clashing with the scorecard.
 const uDoc = (...p) => doc(db, DB_PREFIX + 'users', user.uid, ...p);
 const uCol = n      => collection(db, DB_PREFIX + 'users', user.uid, n);
 
@@ -270,15 +272,15 @@ function generatePlan(ws) {
 
 async function ensurePlan(ws) {
   if (weeklyPlans[ws]) return;
-  const snap = await getDoc(uDoc('weekly_plans', ws));
+  const snap = await getDoc(uDoc('chore_plans', ws));
   weeklyPlans[ws] = snap.exists() ? snap.data() : generatePlan(ws);
-  if (!snap.exists()) await setDoc(uDoc('weekly_plans', ws), weeklyPlans[ws]);
+  if (!snap.exists()) await setDoc(uDoc('chore_plans', ws), weeklyPlans[ws]);
 }
 
 // ── Load / Save ───────────────────────────────────────────────────────
 async function loadAll() {
   // Settings
-  const ss = await getDoc(uDoc('settings','prefs'));
+  const ss = await getDoc(uDoc('chore_settings','prefs'));
   if (ss.exists()) {
     const d = ss.data();
     settings.birdDays  = d.birdDays  || DEFAULT_SETTINGS.birdDays;
@@ -303,8 +305,8 @@ async function loadAll() {
 async function saveLog(ds) {
   await setDoc(uDoc('chore_log', ds), choreLog[ds] || {});
 }
-async function saveSettings() { await setDoc(uDoc('settings','prefs'), settings); }
-async function savePlan(ws)   { await setDoc(uDoc('weekly_plans', ws), weeklyPlans[ws]); }
+async function saveSettings() { await setDoc(uDoc('chore_settings','prefs'), settings); }
+async function savePlan(ws)   { await setDoc(uDoc('chore_plans', ws), weeklyPlans[ws]); }
 
 // ── Chore logic ───────────────────────────────────────────────────────
 function getChoresForKid(kidId, ds) {

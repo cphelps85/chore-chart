@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Chore Chart" />
+  <meta name="theme-color" content="#09090b" />
+  <title>Chore Chart</title>
+  <style>
+    * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+    body { background:#09090b; color:#e4e4e7; font-family:Georgia,serif; min-height:100vh; padding-bottom:100px; padding-top:env(safe-area-inset-top); }
+    #app { max-width:480px; margin:0 auto; }
+
+    /* Header */
+    .header { padding:18px 20px 12px; border-bottom:1px solid #27272a; display:flex; justify-content:space-between; align-items:center; }
+    .header-title { font-size:20px; font-weight:700; letter-spacing:-0.5px; }
+    .header-sub { font-size:12px; color:#71717a; margin-top:2px; }
+    .header-right { display:flex; align-items:center; gap:10px; }
+
+    /* Nav */
+    .nav { display:flex; border-bottom:1px solid #27272a; }
+    .nav-btn { flex:1; padding:11px 0; background:none; border:none; color:#52525b; border-bottom:2px solid transparent; cursor:pointer; font-size:12px; font-family:Georgia,serif; transition:color 0.15s; }
+    .nav-btn.active { color:#e4e4e7; border-bottom-color:#e4e4e7; }
+
+    /* Views */
+    .view { display:none; padding:16px; }
+    .view.active { display:block; }
+
+    /* Section headers */
+    .sh { font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#52525b; margin:20px 0 10px; padding-left:2px; }
+    .sh:first-child { margin-top:4px; }
+
+    /* Kid select screen */
+    .kid-select { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px; gap:14px; }
+    .kid-btn { width:100%; max-width:340px; padding:24px 20px; border-radius:20px; border:2px solid; cursor:pointer; font-family:Georgia,serif; display:flex; align-items:center; gap:18px; transition:transform 0.1s; }
+    .kid-btn:active { transform:scale(0.97); }
+    .kid-btn .k-emoji { font-size:52px; line-height:1; flex-shrink:0; }
+    .kid-btn .k-name { font-size:28px; font-weight:700; }
+    .kid-btn .k-status { font-size:13px; margin-top:4px; opacity:0.8; }
+    .kid-btn.freddy { background:#172554; border-color:#3b82f688; color:#93c5fd; }
+    .kid-btn.claire { background:#500724; border-color:#ec489988; color:#f9a8d4; }
+    .parent-link { font-size:13px; color:#52525b; background:none; border:none; cursor:pointer; font-family:Georgia,serif; text-decoration:underline; margin-top:8px; }
+
+    /* Chore cards */
+    .chore-card { background:#18181b; border:1px solid #27272a; border-radius:16px; padding:16px 18px; margin-bottom:10px; display:flex; align-items:center; gap:16px; cursor:pointer; transition:all 0.15s; -webkit-user-select:none; user-select:none; }
+    .chore-card:active { transform:scale(0.98); }
+    .chore-card.done { background:#0d1f0d; border-color:#4ade8044; }
+    .chore-emoji { font-size:32px; flex-shrink:0; }
+    .chore-info { flex:1; min-width:0; }
+    .chore-name { font-size:16px; font-weight:600; }
+    .chore-name.done-text { text-decoration:line-through; color:#52525b; }
+    .chore-desc { font-size:12px; color:#71717a; margin-top:3px; line-height:1.4; }
+    .chore-check { width:36px; height:36px; border-radius:50%; border:2px solid #3f3f46; background:#27272a; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; flex-shrink:0; color:#4ade80; transition:all 0.15s; }
+    .chore-card.done .chore-check { background:#14532d; border-color:#4ade80; }
+
+    /* Progress banner */
+    .prog-banner { border-radius:14px; padding:14px 18px; margin-bottom:16px; display:flex; align-items:center; gap:14px; }
+    .prog-banner.great { background:linear-gradient(135deg,#14532d,#166534); border:1px solid #4ade8044; }
+    .prog-banner.going { background:linear-gradient(135deg,#422006,#713f12); border:1px solid #fbbf2444; }
+    .prog-banner.start { background:#18181b; border:1px solid #27272a; }
+    .prog-num { font-size:40px; font-weight:700; line-height:1; }
+
+    /* Week view */
+    .week-day-block { margin-bottom:18px; }
+    .week-day-label { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+    .wdl-name { font-size:14px; font-weight:700; }
+    .today-tag { font-size:10px; background:#27272a; color:#a1a1aa; padding:2px 8px; border-radius:99px; font-weight:700; }
+    .wdl-count { margin-left:auto; font-size:13px; color:#71717a; }
+
+    /* Compact chore row for week/parent */
+    .chore-row { background:#18181b; border:1px solid #27272a; border-radius:12px; padding:12px 14px; margin-bottom:8px; display:flex; align-items:center; gap:12px; cursor:pointer; transition:all 0.15s; }
+    .chore-row:active { transform:scale(0.98); }
+    .chore-row.done { background:#0d1f0d; border-color:#4ade8044; }
+    .chore-row.past { opacity:0.6; cursor:default; }
+    .cr-emoji { font-size:22px; flex-shrink:0; }
+    .cr-name { flex:1; font-size:14px; font-weight:600; }
+    .cr-name.done-text { text-decoration:line-through; color:#52525b; }
+    .cr-check { font-size:16px; }
+    .cr-who { font-size:11px; font-weight:700; padding:3px 8px; border-radius:99px; flex-shrink:0; }
+    .cr-who.freddy { background:#172554; color:#93c5fd; }
+    .cr-who.claire { background:#500724; color:#f9a8d4; }
+
+    /* History */
+    .hist-card { background:#18181b; border:1px solid #27272a; border-radius:12px; padding:14px 16px; margin-bottom:10px; }
+    .hist-week-hdr { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+    .hist-wk-dates { font-size:13px; font-weight:700; }
+    .cur-week-tag { font-size:10px; background:#27272a; color:#a1a1aa; padding:2px 8px; border-radius:99px; }
+    .hist-kid-row { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+    .hkr-emoji { font-size:20px; width:28px; }
+    .hkr-bar { flex:1; height:8px; background:#27272a; border-radius:99px; overflow:hidden; }
+    .hkr-fill { height:100%; border-radius:99px; }
+    .hkr-pct { font-size:12px; font-weight:700; min-width:36px; text-align:right; }
+
+    /* Settings */
+    .s-card { background:#18181b; border:1px solid #27272a; border-radius:12px; padding:14px 16px; margin-bottom:10px; }
+    .s-row { display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid #27272a; }
+    .s-row:last-child { border-bottom:none; }
+    .s-label { font-size:13px; font-weight:600; }
+    .s-sub { font-size:11px; color:#71717a; margin-top:2px; }
+    .badge { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border-radius:99px; font-size:12px; font-weight:700; }
+    .badge.freddy { background:#172554; color:#93c5fd; }
+    .badge.claire { background:#500724; color:#f9a8d4; }
+    .day-picker { display:flex; gap:4px; flex-wrap:wrap; margin-top:8px; }
+    .dp-btn { padding:5px 10px; border-radius:99px; border:1px solid #3f3f46; background:#27272a; color:#71717a; font-size:11px; cursor:pointer; font-family:Georgia,serif; transition:all 0.15s; }
+    .dp-btn.on { background:#172554; border-color:#60a5fa88; color:#60a5fa; }
+    .icon-btn { padding:7px 14px; border-radius:10px; border:1px solid #3f3f46; background:#27272a; color:#a1a1aa; font-size:12px; cursor:pointer; font-family:Georgia,serif; }
+
+    /* Overview cards (parent) */
+    .ov-card { background:#18181b; border:1px solid #27272a; border-radius:14px; padding:16px 18px; margin-bottom:10px; }
+    .ov-bar { height:8px; background:#27272a; border-radius:99px; overflow:hidden; margin-top:8px; }
+    .ov-fill { height:100%; border-radius:99px; }
+
+    /* Misc */
+    .empty { text-align:center; color:#52525b; padding:48px 16px; font-size:14px; line-height:2; }
+    .change-kid { padding:6px 14px; border-radius:10px; border:1px solid #3f3f46; background:#18181b; color:#71717a; font-size:12px; cursor:pointer; font-family:Georgia,serif; }
+    .pill { padding:8px 18px; border-radius:10px; border:none; font-size:13px; font-weight:700; cursor:pointer; font-family:Georgia,serif; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#71717a;gap:16px">
+    <div style="font-size:40px">⭐</div><div style="font-size:14px">Loading…</div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, collection, getDocs }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// ── Firebase config (reusing daily-scorecard project) ─────────────────
+const firebaseConfig = {
+  apiKey:            "AIzaSyAu5PZP0rRuTsWlk-5zF0GOAMbUGjYBYQ0",
+  authDomain:        "daily-scorecard-62031.firebaseapp.com",
+  projectId:         "daily-scorecard-62031",
+  storageBucket:     "daily-scorecard-62031.firebasestorage.app",
+  messagingSenderId: "647221313494",
+  appId:             "1:647221313494:web:f4755a965e75b044a46e77"
+};
+
+const IS_DEV    = window.location.protocol === 'file:';
+const DB_PREFIX = IS_DEV ? 'dev_chore_' : 'chore_';
+
+const fbApp = initializeApp(firebaseConfig);
+const auth  = getAuth(fbApp);
+const db    = getFirestore(fbApp);
+
+if (IS_DEV) {
+  const b = document.createElement('div');
+  b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#e65c00;color:#fff;text-align:center;font-weight:700;font-size:0.85rem;padding:0.4rem 1rem';
+  b.textContent = '⚠️ DEV MODE — test data only';
+  document.body.prepend(b);
+}
+
+// ── Constants ─────────────────────────────────────────────────────────
+const DAY_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const DAY_FULL  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+const KIDS = {
+  freddy: { name:'Freddy', emoji:'🦊', color:'#3b82f6', btnCls:'freddy' },
+  claire: { name:'Claire', emoji:'🌸', color:'#ec4899', btnCls:'claire' },
+};
+
+// who:
+//   'claire'/'freddy'  → that kid only
+//   'each'             → both kids independently
+//   'shared'           → one kid per week, rotates
+//   'split'            → two days/week, one kid each day
+//
+// schedule:
+//   'daily'            → every day
+//   'school-day'       → Mon–Fri
+//   'school-night'     → Sun–Thu (night before school)
+//   'weekend'          → Sat or Sun; once done either day, counts for the weekend
+//   'weekly'           → specific dow(s) in settings.choreDays[id]
+
+const CHORES = [
+  { id:'feed-dogs',    name:'Feed the Dogs',      emoji:'🐕', who:'claire', schedule:'daily',       desc:'Fill dog bowls with food & fresh water' },
+  { id:'feed-birds',   name:'Feed the Birds',      emoji:'🐦', who:'split',  schedule:'split',       desc:'Fill the bird feeder' },
+  { id:'towels',       name:'Change Hand Towels',  emoji:'🚿', who:'shared', schedule:'weekly',      desc:'Replace hand towels in the bathrooms' },
+  { id:'toilet-paper', name:'Check Toilet Paper',  emoji:'🧻', who:'shared', schedule:'weekly',      desc:'Check & refill toilet paper if needed' },
+  { id:'new-room',     name:'Clean New Room',      emoji:'🧹', who:'shared', schedule:'weekly',      desc:'Tidy and clean the new room' },
+  { id:'bedroom',      name:'Clean Bedroom',       emoji:'🛏️', who:'each',   schedule:'weekly',      desc:'Make bed, pick up toys, tidy your room' },
+  { id:'laundry',      name:'Do Laundry',          emoji:'👕', who:'each',   schedule:'weekend',     desc:'Wash, dry, and put away clothes' },
+  { id:'pack-snack',   name:'Pack School Snack',   emoji:'🍎', who:'each',   schedule:'school-night',desc:'Put a snack in your backpack for tomorrow' },
+  { id:'backpack',     name:'Unpack Backpack',      emoji:'🎒', who:'each',   schedule:'school-day',  desc:'Unpack and put everything away' },
+];
+
+// ── Default settings ──────────────────────────────────────────────────
+const DEFAULT_SETTINGS = {
+  birdDays:  [2, 5],      // Tue + Fri
+  choreDays: {
+    towels:        [6],   // Saturday
+    'toilet-paper':[6],
+    'new-room':    [6],
+    bedroom:       [0],   // Sunday
+  },
+};
+
+// ── State ─────────────────────────────────────────────────────────────
+let user        = null;
+let activeKid   = sessionStorage.getItem('cc_kid') || null;
+let currentView = 'today';
+let settings    = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+let weeklyPlans = {};   // { weekStart: planObj }
+let choreLog    = {};   // { dateStr: { 'freddy-backpack': {done,ts}, ... } }
+
+// ── Firestore helpers ─────────────────────────────────────────────────
+const uDoc = (...p) => doc(db, DB_PREFIX + 'users', user.uid, ...p);
+const uCol = n      => collection(db, DB_PREFIX + 'users', user.uid, n);
+
+// ── Date helpers ──────────────────────────────────────────────────────
+const todayStr = () => new Date().toISOString().slice(0,10);
+const dStr     = d  => d.toISOString().slice(0,10);
+
+function weekStart(ds) {
+  const d = new Date(ds + 'T12:00:00');
+  d.setDate(d.getDate() - d.getDay());
+  return dStr(d);
+}
+
+function weekDays(ws) {
+  return Array.from({length:7}, (_,i) => {
+    const d = new Date(ws + 'T12:00:00');
+    d.setDate(d.getDate() + i);
+    return dStr(d);
+  });
+}
+
+function prevWeekStart(ws) {
+  const d = new Date(ws + 'T12:00:00');
+  d.setDate(d.getDate() - 7);
+  return dStr(d);
+}
+
+function saturdayOf(ds) {
+  const d = new Date(ds + 'T12:00:00');
+  const dow = d.getDay();
+  if (dow === 6) return ds;
+  if (dow === 0) { d.setDate(d.getDate() - 1); return dStr(d); }
+  return null;
+}
+
+// ── Weekly plan generation ────────────────────────────────────────────
+function generatePlan(ws) {
+  const plan = {};
+  const weekNum = Math.floor(new Date(ws + 'T12:00:00').getTime() / (7 * 86400000));
+
+  // Bird feeding: two days, one kid each (randomly assigned)
+  const birdDays = settings.birdDays.slice().sort((a,b)=>a-b);
+  const firstKid = Math.random() < 0.5 ? 'freddy' : 'claire';
+  plan['feed-birds'] = [
+    { day: birdDays[0], kid: firstKid },
+    { day: birdDays[1], kid: firstKid === 'freddy' ? 'claire' : 'freddy' },
+  ];
+
+  // Shared chores: deterministic alternation so it's always fair
+  CHORES.filter(c => c.who === 'shared').forEach((chore, i) => {
+    const kid = (weekNum + i) % 2 === 0 ? 'freddy' : 'claire';
+    const days = (settings.choreDays[chore.id] || [6]).slice();
+    plan[chore.id] = { kid, days };
+  });
+
+  return plan;
+}
+
+async function ensurePlan(ws) {
+  if (weeklyPlans[ws]) return;
+  const snap = await getDoc(uDoc('weekly_plans', ws));
+  weeklyPlans[ws] = snap.exists() ? snap.data() : generatePlan(ws);
+  if (!snap.exists()) await setDoc(uDoc('weekly_plans', ws), weeklyPlans[ws]);
+}
+
+// ── Load / Save ───────────────────────────────────────────────────────
+async function loadAll() {
+  // Settings
+  const ss = await getDoc(uDoc('settings','prefs'));
+  if (ss.exists()) {
+    const d = ss.data();
+    settings.birdDays  = d.birdDays  || DEFAULT_SETTINGS.birdDays;
+    settings.choreDays = { ...DEFAULT_SETTINGS.choreDays, ...(d.choreDays || {}) };
+  }
+
+  // Weekly plans: current + 3 prior weeks
+  const ws  = weekStart(todayStr());
+  const wss = [ws, prevWeekStart(ws), prevWeekStart(prevWeekStart(ws)),
+               prevWeekStart(prevWeekStart(prevWeekStart(ws)))];
+  await Promise.all(wss.map(ensurePlan));
+
+  // Chore logs for all those days
+  const allDays = wss.flatMap(weekDays);
+  choreLog = {};
+  await Promise.all(allDays.map(async ds => {
+    const snap = await getDoc(uDoc('chore_log', ds));
+    if (snap.exists()) choreLog[ds] = snap.data();
+  }));
+}
+
+async function saveLog(ds) {
+  await setDoc(uDoc('chore_log', ds), choreLog[ds] || {});
+}
+async function saveSettings() { await setDoc(uDoc('settings','prefs'), settings); }
+async function savePlan(ws)   { await setDoc(uDoc('weekly_plans', ws), weeklyPlans[ws]); }
+
+// ── Chore logic ───────────────────────────────────────────────────────
+function getChoresForKid(kidId, ds) {
+  const d   = new Date(ds + 'T12:00:00');
+  const dow  = d.getDay();
+  const ws   = weekStart(ds);
+  const plan = weeklyPlans[ws] || {};
+  const result = [];
+
+  for (const chore of CHORES) {
+    // --- Is this kid doing this chore? ---
+    let assigned = false;
+    if (chore.who === kidId)      assigned = true;
+    else if (chore.who === 'each') assigned = true;
+    else if (chore.who === 'shared') {
+      const e = plan[chore.id];
+      assigned = e && e.kid === kidId;
+    }
+    else if (chore.who === 'split') {
+      const entries = plan['feed-birds'] || [];
+      assigned = entries.some(e => e.kid === kidId && e.day === dow);
+    }
+    if (!assigned) continue;
+
+    // --- Is it scheduled today? ---
+    let scheduled = false;
+    const isSchoolDay   = dow >= 1 && dow <= 5;
+    const isSchoolNight = dow <= 4;
+    const isWeekend     = dow === 0 || dow === 6;
+
+    switch (chore.schedule) {
+      case 'daily':        scheduled = true; break;
+      case 'school-day':   scheduled = isSchoolDay; break;
+      case 'school-night': scheduled = isSchoolNight; break;
+      case 'weekend':      scheduled = isWeekend; break;
+      case 'split':        scheduled = true; break; // already checked day in assigned
+      case 'weekly': {
+        const days = plan[chore.id]?.days || settings.choreDays[chore.id] || [6];
+        scheduled = days.includes(dow);
+        break;
+      }
+    }
+    if (!scheduled) continue;
+
+    // --- Check if done ---
+    const key = `${kidId}-${chore.id}`;
+
+    // For weekend laundry: check both Sat and following Sun
+    if (chore.schedule === 'weekend') {
+      const sat = saturdayOf(ds);
+      if (sat) {
+        const satDone  = !!choreLog[sat]?.[key]?.done;
+        const sunDs    = (() => { const d2=new Date(sat+'T12:00:00'); d2.setDate(d2.getDate()+1); return dStr(d2); })();
+        const sunDone  = !!choreLog[sunDs]?.[key]?.done;
+        result.push({ ...chore, key, done: satDone || sunDone });
+        continue;
+      }
+    }
+
+    result.push({ ...chore, key, done: !!choreLog[ds]?.[key]?.done });
+  }
+
+  return result;
+}
+
+async function toggleChore(kidId, key, ds) {
+  if (!choreLog[ds]) choreLog[ds] = {};
+  const cur = choreLog[ds][key]?.done || false;
+  choreLog[ds][key] = { done: !cur, ts: Date.now(), kid: kidId };
+  await saveLog(ds);
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────
+onAuthStateChanged(auth, async u => {
+  user = u;
+  if (u) {
+    showLoading('Getting chores ready…');
+    await loadAll();
+    renderShell();
+    render();
+  } else {
+    renderLogin();
+  }
+});
+
+function showLoading(msg) {
+  document.getElementById('app').innerHTML = `<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#71717a;gap:16px"><div style="font-size:40px">⭐</div><div style="font-size:14px">${msg}</div></div>`;
+}
+
+function renderLogin() {
+  document.getElementById('app').innerHTML = `
+    <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;gap:14px">
+      <div style="font-size:60px">⭐</div>
+      <div style="font-size:28px;font-weight:700;letter-spacing:-0.5px">Chore Chart</div>
+      <div style="font-size:14px;color:#71717a;line-height:1.6;max-width:280px">Freddy &amp; Claire's daily chores</div>
+      <button id="signin-btn" style="display:flex;align-items:center;gap:12px;padding:14px 28px;background:#e4e4e7;color:#09090b;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:Georgia,serif;margin-top:12px">
+        <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Sign in with Google
+      </button>
+    </div>`;
+  document.getElementById('signin-btn').addEventListener('click', async () => {
+    try { await signInWithPopup(auth, new GoogleAuthProvider()); }
+    catch(e) { alert('Sign-in failed: ' + e.message); }
+  });
+}
+
+// ── Shell ─────────────────────────────────────────────────────────────
+function renderShell() {
+  const kid = activeKid && KIDS[activeKid];
+  document.getElementById('app').innerHTML = `
+    <div${IS_DEV?' style="padding-top:36px"':''}>
+      <div class="header">
+        <div>
+          <div class="header-title">${kid ? `${kid.emoji} ${kid.name}'s Chores` : '⭐ Chore Chart'}</div>
+          <div class="header-sub">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</div>
+        </div>
+        <div class="header-right">
+          <button class="change-kid" id="switch-kid">Switch Kid</button>
+          ${user?.photoURL ? `<img src="${user.photoURL}" id="avatar" style="width:30px;height:30px;border-radius:50%;cursor:pointer" title="Sign out">` : ''}
+        </div>
+      </div>
+      <div class="nav">
+        <button class="nav-btn active" data-view="today">Today</button>
+        <button class="nav-btn" data-view="week">Week</button>
+        <button class="nav-btn" data-view="history">History</button>
+        <button class="nav-btn" data-view="settings">⚙️</button>
+      </div>
+      <div id="view-today"    class="view active"></div>
+      <div id="view-week"     class="view"></div>
+      <div id="view-history"  class="view"></div>
+      <div id="view-settings" class="view"></div>
+    </div>`;
+
+  document.getElementById('switch-kid').addEventListener('click', () => {
+    activeKid = null; sessionStorage.removeItem('cc_kid');
+    renderShell(); render();
+  });
+  const av = document.getElementById('avatar');
+  if (av) av.addEventListener('click', () => { if(confirm('Sign out?')) signOut(auth); });
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentView = btn.dataset.view;
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById('view-' + currentView).classList.add('active');
+      render();
+    });
+  });
+}
+
+function render() {
+  if (!activeKid)              { renderKidSelect(); return; }
+  if (currentView === 'today')    renderToday();
+  if (currentView === 'week')     renderWeek();
+  if (currentView === 'history')  renderHistory();
+  if (currentView === 'settings') renderSettings();
+}
+
+function freshView(name) {
+  const old = document.getElementById('view-' + name);
+  const el  = old.cloneNode(false);
+  old.parentNode.replaceChild(el, old);
+  return el;
+}
+
+// ── Kid select ────────────────────────────────────────────────────────
+function renderKidSelect() {
+  const ds = todayStr();
+  const stats = (kidId) => {
+    const chores = getChoresForKid(kidId, ds);
+    const done   = chores.filter(c => c.done).length;
+    return { done, total: chores.length, allDone: done === chores.length && chores.length > 0 };
+  };
+  const f = stats('freddy'), c = stats('claire');
+
+  document.getElementById('app').innerHTML = `
+    <div class="kid-select">
+      <div style="font-size:56px">⭐</div>
+      <div style="font-size:26px;font-weight:700;letter-spacing:-0.5px">Chore Chart</div>
+      <div style="font-size:13px;color:#71717a;margin-bottom:12px">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</div>
+
+      <button class="kid-btn freddy" id="btn-freddy">
+        <div class="k-emoji">🦊</div>
+        <div style="flex:1">
+          <div class="k-name">Freddy</div>
+          <div class="k-status">${f.done}/${f.total} chores done today</div>
+        </div>
+        <div style="font-size:28px">${f.allDone ? '🌟' : '→'}</div>
+      </button>
+
+      <button class="kid-btn claire" id="btn-claire">
+        <div class="k-emoji">🌸</div>
+        <div style="flex:1">
+          <div class="k-name">Claire</div>
+          <div class="k-status">${c.done}/${c.total} chores done today</div>
+        </div>
+        <div style="font-size:28px">${c.allDone ? '🌟' : '→'}</div>
+      </button>
+
+      <button class="parent-link" id="btn-parent">👩‍💼 Parent View</button>
+    </div>`;
+
+  document.getElementById('btn-freddy').addEventListener('click', () => pickKid('freddy'));
+  document.getElementById('btn-claire').addEventListener('click', () => pickKid('claire'));
+  document.getElementById('btn-parent').addEventListener('click', () => pickKid('parent'));
+}
+
+function pickKid(kidId) {
+  activeKid = kidId;
+  sessionStorage.setItem('cc_kid', kidId);
+  renderShell();
+  render();
+}
+
+// ── TODAY ─────────────────────────────────────────────────────────────
+function renderToday() {
+  const el = freshView('today');
+  const ds = todayStr();
+
+  if (activeKid === 'parent') { renderParentToday(el, ds); return; }
+
+  const kidId  = activeKid;
+  const chores = getChoresForKid(kidId, ds);
+
+  if (chores.length === 0) {
+    el.innerHTML = `<div class="empty">🎉<br>No chores today!<br><br>Enjoy your day!</div>`;
+    return;
+  }
+
+  const done    = chores.filter(c => c.done).length;
+  const total   = chores.length;
+  const allDone = done === total;
+
+  let html = '';
+
+  // Progress banner
+  if (allDone) {
+    html += `<div class="prog-banner great">
+      <div style="font-size:44px">🌟</div>
+      <div>
+        <div style="font-size:16px;font-weight:700;color:#4ade80">All done — amazing job!</div>
+        <div style="font-size:12px;color:#86efac;margin-top:3px">Every chore is checked off ✓</div>
+      </div>
+    </div>`;
+  } else if (done > 0) {
+    html += `<div class="prog-banner going">
+      <div class="prog-num" style="color:#fbbf24">${done}</div>
+      <div>
+        <div style="font-size:15px;font-weight:700;color:#fbbf24">Keep going!</div>
+        <div style="font-size:12px;color:#d97706;margin-top:3px">${done} of ${total} done · ${total-done} to go</div>
+      </div>
+    </div>`;
+  } else {
+    html += `<div class="prog-banner start">
+      <div class="prog-num" style="color:#52525b">0</div>
+      <div>
+        <div style="font-size:15px;font-weight:700">Let's get started!</div>
+        <div style="font-size:12px;color:#52525b;margin-top:3px">${total} chores today</div>
+      </div>
+    </div>`;
+  }
+
+  html += `<div class="sh">Today's Chores</div>`;
+  chores.forEach(c => { html += choreCard(c); });
+  el.innerHTML = html;
+
+  el.querySelectorAll('[data-key]').forEach(card => {
+    card.addEventListener('click', async () => {
+      await toggleChore(kidId, card.dataset.key, ds);
+      renderToday();
+      if (currentView === 'today') maybeUpdateKidSelect();
+    });
+  });
+}
+
+function choreCard(c) {
+  return `<div class="chore-card ${c.done?'done':''}" data-key="${c.key}">
+    <div class="chore-emoji">${c.emoji}</div>
+    <div class="chore-info">
+      <div class="chore-name ${c.done?'done-text':''}">${c.name}</div>
+      <div class="chore-desc">${c.desc}</div>
+    </div>
+    <div class="chore-check">${c.done ? '✓' : ''}</div>
+  </div>`;
+}
+
+function maybeUpdateKidSelect() { /* kid select is not visible during today view */ }
+
+// ── Parent today ───────────────────────────────────────────────────────
+function renderParentToday(el, ds) {
+  let html = `<div class="sh">Today's Overview</div>`;
+  ['freddy','claire'].forEach(kidId => {
+    const kid    = KIDS[kidId];
+    const chores = getChoresForKid(kidId, ds);
+    const done   = chores.filter(c => c.done).length;
+    const total  = chores.length;
+    const pct    = total > 0 ? done/total : 0;
+    html += `<div class="ov-card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:18px;font-weight:700">${kid.emoji} ${kid.name}</div>
+        <div style="font-size:14px;font-weight:700;color:${kid.color}">${done}/${total} ${pct===1&&total>0?'🌟':''}</div>
+      </div>
+      <div class="ov-bar"><div class="ov-fill" style="width:${Math.round(pct*100)}%;background:${kid.color}"></div></div>
+      ${chores.length > 0 ? `<div style="margin-top:12px">${chores.map(c=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #27272a;font-size:13px">
+        <span style="font-size:18px">${c.emoji}</span>
+        <span style="flex:1;${c.done?'color:#52525b;text-decoration:line-through':''}">${c.name}</span>
+        <span>${c.done?'✅':'⬜'}</span>
+      </div>`).join('')}</div>` : '<div style="font-size:12px;color:#52525b;margin-top:8px">No chores today</div>'}
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+// ── WEEK ──────────────────────────────────────────────────────────────
+function renderWeek() {
+  const el  = freshView('week');
+  const ws  = weekStart(todayStr());
+  const days = weekDays(ws);
+  const today = todayStr();
+
+  if (activeKid === 'parent') { renderParentWeek(el, days, today); return; }
+
+  const kidId = activeKid;
+  let html = '';
+
+  days.forEach(ds => {
+    const chores  = getChoresForKid(kidId, ds);
+    if (chores.length === 0) return;
+    const done    = chores.filter(c => c.done).length;
+    const isToday = ds === today;
+    const isPast  = ds < today;
+    const dow     = new Date(ds + 'T12:00:00').getDay();
+
+    html += `<div class="week-day-block">
+      <div class="week-day-label">
+        <div class="wdl-name">${DAY_FULL[dow]}</div>
+        ${isToday ? '<div class="today-tag">TODAY</div>' : ''}
+        <div class="wdl-count">${done}/${chores.length}${done===chores.length&&chores.length>0?' 🌟':''}</div>
+      </div>`;
+
+    chores.forEach(c => {
+      if (isToday) {
+        html += `<div class="chore-row ${c.done?'done':''}" data-key="${c.key}" data-ds="${ds}">
+          <div class="cr-emoji">${c.emoji}</div>
+          <div class="cr-name ${c.done?'done-text':''}">${c.name}</div>
+          <div class="cr-check">${c.done?'✅':'⬜'}</div>
+        </div>`;
+      } else {
+        html += `<div class="chore-row past ${c.done?'done':''}">
+          <div class="cr-emoji">${c.emoji}</div>
+          <div class="cr-name ${c.done?'done-text':''}">${c.name}</div>
+          <div class="cr-check">${isPast ? (c.done?'✅':'❌') : '—'}</div>
+        </div>`;
+      }
+    });
+    html += `</div>`;
+  });
+
+  if (!html) html = `<div class="empty">No chores found for this week.</div>`;
+  el.innerHTML = html;
+
+  el.querySelectorAll('[data-key][data-ds]').forEach(row => {
+    row.addEventListener('click', async () => {
+      await toggleChore(kidId, row.dataset.key, row.dataset.ds);
+      renderWeek();
+    });
+  });
+}
+
+// ── Parent week ────────────────────────────────────────────────────────
+function renderParentWeek(el, days, today) {
+  let html = `<div class="sh">This Week — All Chores</div>`;
+  days.forEach(ds => {
+    const dow = new Date(ds + 'T12:00:00').getDay();
+    const fChores = getChoresForKid('freddy', ds);
+    const cChores = getChoresForKid('claire', ds);
+    if (!fChores.length && !cChores.length) return;
+    const isToday = ds === today;
+
+    html += `<div style="margin-bottom:18px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <div style="font-size:14px;font-weight:700">${DAY_FULL[dow]}</div>
+        ${isToday?'<div class="today-tag">TODAY</div>':''}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">`;
+
+    [[' freddy', fChores], ['claire', cChores]].forEach(([kidId, chores]) => {
+      const kid  = KIDS[kidId.trim()];
+      const done = chores.filter(c=>c.done).length;
+      html += `<div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:10px">
+        <div style="font-size:12px;font-weight:700;color:${kid.color};margin-bottom:6px">${kid.emoji} ${done}/${chores.length}</div>
+        ${chores.map(c=>`<div style="font-size:12px;display:flex;gap:5px;align-items:center;margin-bottom:4px;${c.done?'color:#52525b;text-decoration:line-through':''}">
+          <span>${c.emoji}</span><span style="flex:1">${c.name}</span>${ds<=today?`<span>${c.done?'✅':'⬜'}</span>`:''}</div>`).join('')}
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+  el.innerHTML = html;
+}
+
+// ── HISTORY ───────────────────────────────────────────────────────────
+function renderHistory() {
+  const el  = freshView('history');
+  const ws  = weekStart(todayStr());
+  let html  = `<div class="sh">Completion History</div>`;
+
+  const weekStarts = [ws];
+  for (let i=1; i<4; i++) {
+    let w = ws;
+    for (let j=0; j<i; j++) w = prevWeekStart(w);
+    weekStarts.push(w);
+  }
+
+  weekStarts.forEach(w => {
+    const days = weekDays(w);
+    const startFmt = new Date(w+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    const endFmt   = new Date(days[6]+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    const isCur    = w === ws;
+
+    // Tally unique chores per kid (dedup weekend laundry)
+    function tally(kidId) {
+      let done=0, total=0;
+      const seenWeekendLaundry = new Set();
+      days.forEach(ds => {
+        getChoresForKid(kidId, ds).forEach(c => {
+          if (c.schedule === 'weekend') {
+            const sat = saturdayOf(ds);
+            if (!sat || seenWeekendLaundry.has(sat+c.id)) return;
+            seenWeekendLaundry.add(sat+c.id);
+          }
+          total++;
+          if (c.done) done++;
+        });
+      });
+      return { done, total, pct: total>0?done/total:0 };
+    }
+
+    const f = tally('freddy'), c = tally('claire');
+
+    html += `<div class="hist-card">
+      <div class="hist-week-hdr">
+        <div class="hist-wk-dates">${startFmt} – ${endFmt}</div>
+        ${isCur?'<div class="cur-week-tag">This week</div>':''}
+      </div>
+      <div class="hist-kid-row">
+        <div class="hkr-emoji">🦊</div>
+        <div class="hkr-bar"><div class="hkr-fill" style="width:${Math.round(f.pct*100)}%;background:#3b82f6"></div></div>
+        <div class="hkr-pct" style="color:#3b82f6">${f.done}/${f.total}</div>
+      </div>
+      <div class="hist-kid-row">
+        <div class="hkr-emoji">🌸</div>
+        <div class="hkr-bar"><div class="hkr-fill" style="width:${Math.round(c.pct*100)}%;background:#ec4899"></div></div>
+        <div class="hkr-pct" style="color:#ec4899">${c.done}/${c.total}</div>
+      </div>
+    </div>`;
+  });
+
+  el.innerHTML = html;
+}
+
+// ── SETTINGS ──────────────────────────────────────────────────────────
+function renderSettings() {
+  const el  = freshView('settings');
+  const ws  = weekStart(todayStr());
+  const plan = weeklyPlans[ws] || {};
+  let html  = '';
+
+  // ── This week's assignments ──
+  html += `<div class="sh">This Week's Assignments</div>`;
+  html += `<div class="s-card">`;
+
+  const birdEntries = plan['feed-birds'] || [];
+  birdEntries.forEach(e => {
+    html += `<div class="s-row">
+      <div><div class="s-label">🐦 Feed Birds — ${DAY_SHORT[e.day]}</div></div>
+      <span class="badge ${e.kid}">${KIDS[e.kid].emoji} ${KIDS[e.kid].name}</span>
+    </div>`;
+  });
+  CHORES.filter(c => c.who === 'shared').forEach(c => {
+    const e = plan[c.id];
+    if (!e) return;
+    const dayNames = e.days.map(d => DAY_SHORT[d]).join(' & ');
+    html += `<div class="s-row">
+      <div><div class="s-label">${c.emoji} ${c.name}<div class="s-sub">${dayNames}</div></div></div>
+      <span class="badge ${e.kid}">${KIDS[e.kid].emoji} ${KIDS[e.kid].name}</span>
+    </div>`;
+  });
+  html += `</div>`;
+
+  // ── Swap / reassign ──
+  html += `<div class="sh">Swap This Week</div>`;
+  html += `<div class="s-card">
+    <div style="font-size:12px;color:#71717a;margin-bottom:10px">Tap to swap who does a shared chore this week.</div>`;
+
+  CHORES.filter(c => c.who === 'shared').forEach(c => {
+    const e = plan[c.id];
+    if (!e) return;
+    const other = e.kid === 'freddy' ? 'claire' : 'freddy';
+    html += `<div class="s-row">
+      <div class="s-label">${c.emoji} ${c.name}</div>
+      <button class="icon-btn" data-action="swap-shared" data-id="${c.id}">
+        ${KIDS[e.kid].emoji}→${KIDS[other].emoji} Swap
+      </button>
+    </div>`;
+  });
+  html += `<div class="s-row">
+    <div class="s-label">🐦 Bird feeding days</div>
+    <button class="icon-btn" data-action="swap-birds">🔄 Swap kids</button>
+  </div>`;
+  html += `</div>`;
+  html += `<button data-action="regenerate" style="width:100%;padding:11px;border-radius:10px;border:1px solid #3f3f46;background:transparent;color:#71717a;font-size:12px;font-weight:700;cursor:pointer;font-family:Georgia,serif;margin-bottom:4px;">🔀 Regenerate All Assignments for This Week</button>`;
+
+  // ── Default schedule ──
+  html += `<div class="sh">Default Schedule</div>`;
+  html += `<div class="s-card">
+    <div style="font-size:12px;color:#71717a;margin-bottom:12px;line-height:1.6">Set which day(s) each weekly chore falls on. Changes apply to new weeks going forward.</div>`;
+
+  CHORES.filter(c => c.schedule === 'weekly').forEach(c => {
+    const cur = (settings.choreDays[c.id] || [6]).slice();
+    html += `<div style="padding:10px 0;border-bottom:1px solid #27272a">
+      <div style="font-size:13px;font-weight:600;margin-bottom:6px">${c.emoji} ${c.name}</div>
+      <div class="day-picker">${DAY_SHORT.map((n,i)=>`<button class="dp-btn ${cur.includes(i)?'on':''}" data-action="toggle-day" data-cid="${c.id}" data-dow="${i}">${n}</button>`).join('')}</div>
+    </div>`;
+  });
+
+  const birdDays = settings.birdDays.slice();
+  html += `<div style="padding:10px 0">
+    <div style="font-size:13px;font-weight:600;margin-bottom:6px">🐦 Bird Feeding Days <span style="font-size:11px;color:#52525b;font-weight:400">(pick exactly 2)</span></div>
+    <div class="day-picker">${DAY_SHORT.map((n,i)=>`<button class="dp-btn ${birdDays.includes(i)?'on':''}" data-action="toggle-bird" data-dow="${i}">${n}</button>`).join('')}</div>
+  </div>`;
+  html += `</div>`;
+
+  // ── Account ──
+  html += `<div class="sh">Account</div>`;
+  html += `<div class="s-card"><div class="s-row">
+    <div><div class="s-label">${user?.displayName || 'Parent'}</div><div class="s-sub">Signed in with Google</div></div>
+    <button data-action="signout" class="icon-btn">Sign out</button>
+  </div></div>`;
+
+  el.innerHTML = html;
+
+  el.addEventListener('click', async e => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+
+    if (action === 'swap-shared') {
+      const id = btn.dataset.id;
+      if (weeklyPlans[ws][id]) {
+        weeklyPlans[ws][id].kid = weeklyPlans[ws][id].kid === 'freddy' ? 'claire' : 'freddy';
+        await savePlan(ws);
+        renderSettings();
+      }
+    }
+    else if (action === 'swap-birds') {
+      (weeklyPlans[ws]['feed-birds'] || []).forEach(e => {
+        e.kid = e.kid === 'freddy' ? 'claire' : 'freddy';
+      });
+      await savePlan(ws);
+      renderSettings();
+    }
+    else if (action === 'regenerate') {
+      if (confirm('Regenerate this week\'s assignments with new random picks?')) {
+        weeklyPlans[ws] = generatePlan(ws);
+        await savePlan(ws);
+        renderSettings();
+      }
+    }
+    else if (action === 'toggle-day') {
+      const cid = btn.dataset.cid;
+      const dow = parseInt(btn.dataset.dow);
+      let days = (settings.choreDays[cid] || [6]).slice();
+      const idx = days.indexOf(dow);
+      if (idx >= 0) { if (days.length > 1) days.splice(idx, 1); }
+      else days.push(dow);
+      days.sort((a,b)=>a-b);
+      settings.choreDays[cid] = days;
+      await saveSettings();
+      renderSettings();
+    }
+    else if (action === 'toggle-bird') {
+      const dow = parseInt(btn.dataset.dow);
+      let days = settings.birdDays.slice();
+      const idx = days.indexOf(dow);
+      if (idx >= 0) {
+        if (days.length > 1) days.splice(idx, 1);
+      } else {
+        if (days.length >= 2) { alert('Bird feeding needs exactly 2 days. Deselect one first.'); return; }
+        days.push(dow);
+      }
+      days.sort((a,b)=>a-b);
+      settings.birdDays = days;
+      await saveSettings();
+      renderSettings();
+    }
+    else if (action === 'signout') {
+      if (confirm('Sign out?')) signOut(auth);
+    }
+  });
+}
+</script>
+</body>
+</html>

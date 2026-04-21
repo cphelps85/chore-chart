@@ -121,7 +121,7 @@
     .hist-wk-dates { font-size:13px; font-weight:700; color:#1c1917; }
     .cur-week-tag { font-size:10px; background:#f3f4f6; color:#6b7280; padding:2px 8px; border-radius:99px; }
     .hist-kid-row { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
-    .hkr-emoji { font-size:20px; width:28px; }
+    .hkr-emoji { font-size:22px; width:30px; line-height:1; }
     .hkr-bar { flex:1; height:10px; background:#f3f4f6; border-radius:99px; overflow:hidden; }
     .hkr-fill { height:100%; border-radius:99px; }
     .hkr-pct { font-size:12px; font-weight:700; min-width:36px; text-align:right; }
@@ -194,9 +194,49 @@ if (IS_DEV) {
 const DAY_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const DAY_FULL  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
+// Claire's icon is an inline SVG (Chase from Paw Patrol — German Shepherd police pup).
+// width/height="1em" means it scales with whatever font-size surrounds it, just like an emoji.
+const CHASE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="1em" height="1em" style="vertical-align:-0.15em;display:inline-block">
+  <!-- blue police hat brim -->
+  <ellipse cx="32" cy="26" rx="25" ry="5.5" fill="#1d4ed8"/>
+  <!-- hat body -->
+  <rect x="13" y="9" width="38" height="19" rx="6" fill="#3b82f6"/>
+  <!-- hat highlight -->
+  <rect x="16" y="11" width="32" height="5" rx="3" fill="#60a5fa" opacity="0.4"/>
+  <!-- gold star badge -->
+  <polygon points="32,13 33.6,17.4 38.2,17.4 34.6,20.1 35.9,24.5 32,21.9 28.1,24.5 29.4,20.1 25.8,17.4 30.4,17.4" fill="#fbbf24"/>
+  <!-- dark ear base (behind head) -->
+  <polygon points="16,38 10,12 24,31" fill="#92400e"/>
+  <polygon points="48,38 54,12 40,31" fill="#92400e"/>
+  <!-- inner ear -->
+  <polygon points="17,35 13,17 22,29" fill="#fda4af" opacity="0.45"/>
+  <polygon points="47,35 51,17 42,29" fill="#fda4af" opacity="0.45"/>
+  <!-- head (tan German Shepherd) -->
+  <circle cx="32" cy="44" r="17" fill="#d97706"/>
+  <!-- dark saddle marking on top of head -->
+  <ellipse cx="32" cy="34" rx="11" ry="8" fill="#92400e" opacity="0.75"/>
+  <!-- lighter muzzle -->
+  <ellipse cx="32" cy="50" rx="10" ry="9" fill="#fde68a"/>
+  <!-- eyes -->
+  <circle cx="26" cy="41" r="4" fill="#1c1917"/>
+  <circle cx="38" cy="41" r="4" fill="#1c1917"/>
+  <!-- eye shine -->
+  <circle cx="27.2" cy="39.8" r="1.4" fill="white"/>
+  <circle cx="39.2" cy="39.8" r="1.4" fill="white"/>
+  <!-- nose -->
+  <ellipse cx="32" cy="47" rx="4.5" ry="3.5" fill="#1c1917"/>
+  <!-- nostrils -->
+  <circle cx="30.2" cy="47.8" r="1.1" fill="#431407"/>
+  <circle cx="33.8" cy="47.8" r="1.1" fill="#431407"/>
+  <!-- smile -->
+  <path d="M 26 52 Q 32 58 38 52" stroke="#92400e" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <!-- tongue -->
+  <ellipse cx="32" cy="55.5" rx="3.5" ry="3" fill="#f87171"/>
+</svg>`;
+
 const KIDS = {
-  freddy: { name:'Freddy', emoji:'🦊', color:'#ec4899', btnCls:'freddy' },
-  claire: { name:'Claire', emoji:'🌸', color:'#a855f7', btnCls:'claire' },
+  freddy: { name:'Freddy', emoji:'🦊',      color:'#ec4899', btnCls:'freddy' },
+  claire: { name:'Claire', emoji:CHASE_SVG, color:'#a855f7', btnCls:'claire' },
 };
 
 // who:
@@ -814,12 +854,12 @@ function renderHistory() {
         ${isCur?'<div class="cur-week-tag">This week</div>':''}
       </div>
       <div class="hist-kid-row">
-        <div class="hkr-emoji">🦊</div>
+        <div class="hkr-emoji">${KIDS.freddy.emoji}</div>
         <div class="hkr-bar"><div class="hkr-fill" style="width:${Math.round(f.pct*100)}%;background:${KIDS.freddy.color}"></div></div>
         <div class="hkr-pct" style="color:${KIDS.freddy.color}">${f.done}/${f.total}</div>
       </div>
       <div class="hist-kid-row">
-        <div class="hkr-emoji">🌸</div>
+        <div class="hkr-emoji">${KIDS.claire.emoji}</div>
         <div class="hkr-bar"><div class="hkr-fill" style="width:${Math.round(c.pct*100)}%;background:${KIDS.claire.color}"></div></div>
         <div class="hkr-pct" style="color:${KIDS.claire.color}">${c.done}/${c.total}</div>
       </div>

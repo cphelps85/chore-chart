@@ -127,7 +127,7 @@
 <script type="module">
 import { initializeApp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInAnonymously, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, collection, getDocs }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -385,6 +385,8 @@ onAuthStateChanged(auth, async u => {
     await loadAll();
     renderShell();
     render();
+  } else if (IS_DEV) {
+    await signInAnonymously(auth);
   } else {
     renderLogin();
   }

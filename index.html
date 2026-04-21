@@ -5,121 +5,155 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Chore Chart" />
-  <meta name="theme-color" content="#09090b" />
+  <meta name="theme-color" content="#fffbf0" />
   <title>Chore Chart</title>
   <style>
     * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
-    body { background:#09090b; color:#e4e4e7; font-family:Georgia,serif; min-height:100vh; padding-bottom:100px; padding-top:env(safe-area-inset-top); }
-    #app { max-width:480px; margin:0 auto; }
+
+    /* Light background + scattered confetti dots */
+    body {
+      background-color:#fffbf0;
+      color:#1c1917;
+      font-family:Georgia,serif;
+      min-height:100vh;
+      padding-bottom:100px;
+      padding-top:env(safe-area-inset-top);
+    }
+    body::before {
+      content:''; position:fixed; inset:0; z-index:-1; pointer-events:none;
+      background-image:
+        radial-gradient(circle, #f9a8d4 2px, transparent 2px),
+        radial-gradient(circle, #c4b5fd 2px, transparent 2px),
+        radial-gradient(circle, #93c5fd 2px, transparent 2px),
+        radial-gradient(circle, #86efac 2px, transparent 2px),
+        radial-gradient(circle, #fde68a 2px, transparent 2px),
+        radial-gradient(circle, #fca5a5 2px, transparent 2px),
+        radial-gradient(circle, #6ee7b7 2px, transparent 2px);
+      background-size: 97px 97px, 71px 71px, 113px 113px, 83px 83px, 61px 61px, 107px 107px, 79px 79px;
+      background-position: 12px 8px, 37px 52px, 81px 21px, 18px 74px, 53px 40px, 67px 88px, 44px 63px;
+      opacity:0.55;
+    }
+
+    #app { max-width:480px; margin:0 auto; position:relative; }
+
+    /* Confetti burst animation */
+    @keyframes confettiFall {
+      0%   { transform:translateY(0) rotate(0deg);   opacity:1; }
+      100% { transform:translateY(105vh) rotate(720deg); opacity:0; }
+    }
+    .confetti-piece {
+      position:fixed; border-radius:2px; pointer-events:none; z-index:9999;
+      animation:confettiFall var(--dur, 2s) ease-in var(--delay, 0s) forwards;
+    }
 
     /* Header */
-    .header { padding:18px 20px 12px; border-bottom:1px solid #27272a; display:flex; justify-content:space-between; align-items:center; }
-    .header-title { font-size:20px; font-weight:700; letter-spacing:-0.5px; }
-    .header-sub { font-size:12px; color:#71717a; margin-top:2px; }
+    .header { padding:18px 20px 12px; border-bottom:2px solid #f3f4f6; display:flex; justify-content:space-between; align-items:center; background:#fff; }
+    .header-title { font-size:20px; font-weight:700; letter-spacing:-0.5px; color:#1c1917; }
+    .header-sub { font-size:12px; color:#9ca3af; margin-top:2px; }
     .header-right { display:flex; align-items:center; gap:10px; }
 
     /* Nav */
-    .nav { display:flex; border-bottom:1px solid #27272a; }
-    .nav-btn { flex:1; padding:11px 0; background:none; border:none; color:#52525b; border-bottom:2px solid transparent; cursor:pointer; font-size:12px; font-family:Georgia,serif; transition:color 0.15s; }
-    .nav-btn.active { color:#e4e4e7; border-bottom-color:#e4e4e7; }
+    .nav { display:flex; border-bottom:2px solid #f3f4f6; background:#fff; }
+    .nav-btn { flex:1; padding:11px 0; background:none; border:none; color:#9ca3af; border-bottom:2px solid transparent; cursor:pointer; font-size:12px; font-family:Georgia,serif; transition:color 0.15s; }
+    .nav-btn.active { color:#1c1917; border-bottom-color:#1c1917; }
 
     /* Views */
     .view { display:none; padding:16px; }
     .view.active { display:block; }
 
     /* Section headers */
-    .sh { font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#52525b; margin:20px 0 10px; padding-left:2px; }
+    .sh { font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#9ca3af; margin:20px 0 10px; padding-left:2px; }
     .sh:first-child { margin-top:4px; }
 
     /* Kid select screen */
     .kid-select { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px; gap:14px; }
-    .kid-btn { width:100%; max-width:340px; padding:24px 20px; border-radius:20px; border:2px solid; cursor:pointer; font-family:Georgia,serif; display:flex; align-items:center; gap:18px; transition:transform 0.1s; }
+    .kid-btn { width:100%; max-width:340px; padding:24px 20px; border-radius:20px; border:2px solid; cursor:pointer; font-family:Georgia,serif; display:flex; align-items:center; gap:18px; transition:transform 0.1s; box-shadow:0 4px 16px rgba(0,0,0,0.08); }
     .kid-btn:active { transform:scale(0.97); }
     .kid-btn .k-emoji { font-size:52px; line-height:1; flex-shrink:0; }
     .kid-btn .k-name { font-size:28px; font-weight:700; }
     .kid-btn .k-status { font-size:13px; margin-top:4px; opacity:0.8; }
-    .kid-btn.freddy { background:#172554; border-color:#3b82f688; color:#93c5fd; }
-    .kid-btn.claire { background:#500724; border-color:#ec489988; color:#f9a8d4; }
-    .parent-link { font-size:13px; color:#52525b; background:none; border:none; cursor:pointer; font-family:Georgia,serif; text-decoration:underline; margin-top:8px; }
+    .kid-btn.freddy { background:#fdf2f8; border-color:#f9a8d4; color:#be185d; }
+    .kid-btn.claire { background:#faf5ff; border-color:#d8b4fe; color:#7c3aed; }
+    .parent-link { font-size:13px; color:#9ca3af; background:none; border:none; cursor:pointer; font-family:Georgia,serif; text-decoration:underline; margin-top:8px; }
 
     /* Chore cards */
-    .chore-card { background:#18181b; border:1px solid #27272a; border-radius:16px; padding:16px 18px; margin-bottom:10px; display:flex; align-items:center; gap:16px; cursor:pointer; transition:all 0.15s; -webkit-user-select:none; user-select:none; }
+    .chore-card { background:#fff; border:2px solid #f3f4f6; border-radius:16px; padding:16px 18px; margin-bottom:10px; display:flex; align-items:center; gap:16px; cursor:pointer; transition:all 0.15s; box-shadow:0 2px 8px rgba(0,0,0,0.05); -webkit-user-select:none; user-select:none; }
     .chore-card:active { transform:scale(0.98); }
-    .chore-card.done { background:#0d1f0d; border-color:#4ade8044; }
+    .chore-card.done { background:#f0fdf4; border-color:#bbf7d0; }
     .chore-emoji { font-size:32px; flex-shrink:0; }
     .chore-info { flex:1; min-width:0; }
-    .chore-name { font-size:16px; font-weight:600; }
-    .chore-name.done-text { text-decoration:line-through; color:#52525b; }
-    .chore-desc { font-size:12px; color:#71717a; margin-top:3px; line-height:1.4; }
-    .chore-check { width:36px; height:36px; border-radius:50%; border:2px solid #3f3f46; background:#27272a; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; flex-shrink:0; color:#4ade80; transition:all 0.15s; }
+    .chore-name { font-size:16px; font-weight:600; color:#1c1917; }
+    .chore-name.done-text { text-decoration:line-through; color:#9ca3af; }
+    .chore-desc { font-size:12px; color:#6b7280; margin-top:3px; line-height:1.4; }
+    .chore-check { width:36px; height:36px; border-radius:50%; border:2px solid #e5e7eb; background:#f3f4f6; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; flex-shrink:0; color:#16a34a; transition:all 0.15s; }
     .chore-card.done .chore-check { background:#14532d; border-color:#4ade80; }
 
-    /* Progress banner */
+    /* Progress banners */
     .prog-banner { border-radius:14px; padding:14px 18px; margin-bottom:16px; display:flex; align-items:center; gap:14px; }
-    .prog-banner.great { background:linear-gradient(135deg,#14532d,#166534); border:1px solid #4ade8044; }
-    .prog-banner.going { background:linear-gradient(135deg,#422006,#713f12); border:1px solid #fbbf2444; }
-    .prog-banner.start { background:#18181b; border:1px solid #27272a; }
+    .prog-banner.great { background:linear-gradient(135deg,#dcfce7,#bbf7d0); border:2px solid #86efac; }
+    .prog-banner.going { background:linear-gradient(135deg,#fef3c7,#fde68a); border:2px solid #fbbf24; }
+    .prog-banner.start { background:#f9fafb; border:2px solid #f3f4f6; }
     .prog-num { font-size:40px; font-weight:700; line-height:1; }
 
     /* Week view */
     .week-day-block { margin-bottom:18px; }
     .week-day-label { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
-    .wdl-name { font-size:14px; font-weight:700; }
-    .today-tag { font-size:10px; background:#27272a; color:#a1a1aa; padding:2px 8px; border-radius:99px; font-weight:700; }
-    .wdl-count { margin-left:auto; font-size:13px; color:#71717a; }
+    .wdl-name { font-size:14px; font-weight:700; color:#1c1917; }
+    .today-tag { font-size:10px; background:#1c1917; color:#fff; padding:2px 8px; border-radius:99px; font-weight:700; }
+    .wdl-count { margin-left:auto; font-size:13px; color:#9ca3af; }
 
-    /* Compact chore row for week/parent */
-    .chore-row { background:#18181b; border:1px solid #27272a; border-radius:12px; padding:12px 14px; margin-bottom:8px; display:flex; align-items:center; gap:12px; cursor:pointer; transition:all 0.15s; }
+    /* Compact chore row */
+    .chore-row { background:#fff; border:2px solid #f3f4f6; border-radius:12px; padding:12px 14px; margin-bottom:8px; display:flex; align-items:center; gap:12px; cursor:pointer; transition:all 0.15s; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
     .chore-row:active { transform:scale(0.98); }
-    .chore-row.done { background:#0d1f0d; border-color:#4ade8044; }
+    .chore-row.done { background:#f0fdf4; border-color:#bbf7d0; }
     .chore-row.past { opacity:0.6; cursor:default; }
     .cr-emoji { font-size:22px; flex-shrink:0; }
-    .cr-name { flex:1; font-size:14px; font-weight:600; }
-    .cr-name.done-text { text-decoration:line-through; color:#52525b; }
+    .cr-name { flex:1; font-size:14px; font-weight:600; color:#1c1917; }
+    .cr-name.done-text { text-decoration:line-through; color:#9ca3af; }
     .cr-check { font-size:16px; }
     .cr-who { font-size:11px; font-weight:700; padding:3px 8px; border-radius:99px; flex-shrink:0; }
-    .cr-who.freddy { background:#172554; color:#93c5fd; }
-    .cr-who.claire { background:#500724; color:#f9a8d4; }
+    .cr-who.freddy { background:#fdf2f8; color:#be185d; }
+    .cr-who.claire { background:#faf5ff; color:#7c3aed; }
 
     /* History */
-    .hist-card { background:#18181b; border:1px solid #27272a; border-radius:12px; padding:14px 16px; margin-bottom:10px; }
+    .hist-card { background:#fff; border:2px solid #f3f4f6; border-radius:12px; padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
     .hist-week-hdr { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
-    .hist-wk-dates { font-size:13px; font-weight:700; }
-    .cur-week-tag { font-size:10px; background:#27272a; color:#a1a1aa; padding:2px 8px; border-radius:99px; }
+    .hist-wk-dates { font-size:13px; font-weight:700; color:#1c1917; }
+    .cur-week-tag { font-size:10px; background:#f3f4f6; color:#6b7280; padding:2px 8px; border-radius:99px; }
     .hist-kid-row { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
     .hkr-emoji { font-size:20px; width:28px; }
-    .hkr-bar { flex:1; height:8px; background:#27272a; border-radius:99px; overflow:hidden; }
+    .hkr-bar { flex:1; height:10px; background:#f3f4f6; border-radius:99px; overflow:hidden; }
     .hkr-fill { height:100%; border-radius:99px; }
     .hkr-pct { font-size:12px; font-weight:700; min-width:36px; text-align:right; }
 
     /* Settings */
-    .s-card { background:#18181b; border:1px solid #27272a; border-radius:12px; padding:14px 16px; margin-bottom:10px; }
-    .s-row { display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid #27272a; }
+    .s-card { background:#fff; border:2px solid #f3f4f6; border-radius:12px; padding:14px 16px; margin-bottom:10px; box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+    .s-row { display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid #f3f4f6; }
     .s-row:last-child { border-bottom:none; }
-    .s-label { font-size:13px; font-weight:600; }
-    .s-sub { font-size:11px; color:#71717a; margin-top:2px; }
+    .s-label { font-size:13px; font-weight:600; color:#1c1917; }
+    .s-sub { font-size:11px; color:#9ca3af; margin-top:2px; }
     .badge { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border-radius:99px; font-size:12px; font-weight:700; }
-    .badge.freddy { background:#172554; color:#93c5fd; }
-    .badge.claire { background:#500724; color:#f9a8d4; }
+    .badge.freddy { background:#fdf2f8; color:#be185d; }
+    .badge.claire { background:#faf5ff; color:#7c3aed; }
     .day-picker { display:flex; gap:4px; flex-wrap:wrap; margin-top:8px; }
-    .dp-btn { padding:5px 10px; border-radius:99px; border:1px solid #3f3f46; background:#27272a; color:#71717a; font-size:11px; cursor:pointer; font-family:Georgia,serif; transition:all 0.15s; }
-    .dp-btn.on { background:#172554; border-color:#60a5fa88; color:#60a5fa; }
-    .icon-btn { padding:7px 14px; border-radius:10px; border:1px solid #3f3f46; background:#27272a; color:#a1a1aa; font-size:12px; cursor:pointer; font-family:Georgia,serif; }
+    .dp-btn { padding:5px 10px; border-radius:99px; border:1px solid #e5e7eb; background:#f3f4f6; color:#6b7280; font-size:11px; cursor:pointer; font-family:Georgia,serif; transition:all 0.15s; }
+    .dp-btn.on { background:#fdf4ff; border-color:#d8b4fe; color:#7c3aed; }
+    .icon-btn { padding:7px 14px; border-radius:10px; border:1px solid #e5e7eb; background:#f3f4f6; color:#6b7280; font-size:12px; cursor:pointer; font-family:Georgia,serif; }
 
     /* Overview cards (parent) */
-    .ov-card { background:#18181b; border:1px solid #27272a; border-radius:14px; padding:16px 18px; margin-bottom:10px; }
-    .ov-bar { height:8px; background:#27272a; border-radius:99px; overflow:hidden; margin-top:8px; }
+    .ov-card { background:#fff; border:2px solid #f3f4f6; border-radius:14px; padding:16px 18px; margin-bottom:10px; box-shadow:0 2px 8px rgba(0,0,0,0.05); }
+    .ov-bar { height:10px; background:#f3f4f6; border-radius:99px; overflow:hidden; margin-top:8px; }
     .ov-fill { height:100%; border-radius:99px; }
 
     /* Misc */
-    .empty { text-align:center; color:#52525b; padding:48px 16px; font-size:14px; line-height:2; }
-    .change-kid { padding:6px 14px; border-radius:10px; border:1px solid #3f3f46; background:#18181b; color:#71717a; font-size:12px; cursor:pointer; font-family:Georgia,serif; }
+    .empty { text-align:center; color:#9ca3af; padding:48px 16px; font-size:14px; line-height:2; }
+    .change-kid { padding:6px 14px; border-radius:10px; border:1px solid #e5e7eb; background:#f3f4f6; color:#6b7280; font-size:12px; cursor:pointer; font-family:Georgia,serif; }
     .pill { padding:8px 18px; border-radius:10px; border:none; font-size:13px; font-weight:700; cursor:pointer; font-family:Georgia,serif; }
   </style>
 </head>
 <body>
 <div id="app">
-  <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#71717a;gap:16px">
+  <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#9ca3af;gap:16px">
     <div style="font-size:40px">⭐</div><div style="font-size:14px">Loading…</div>
   </div>
 </div>
@@ -161,8 +195,8 @@ const DAY_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const DAY_FULL  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
 const KIDS = {
-  freddy: { name:'Freddy', emoji:'🦊', color:'#3b82f6', btnCls:'freddy' },
-  claire: { name:'Claire', emoji:'🌸', color:'#ec4899', btnCls:'claire' },
+  freddy: { name:'Freddy', emoji:'🦊', color:'#ec4899', btnCls:'freddy' },
+  claire: { name:'Claire', emoji:'🌸', color:'#a855f7', btnCls:'claire' },
 };
 
 // who:
@@ -543,6 +577,9 @@ function renderToday() {
   const total   = chores.length;
   const allDone = done === total;
 
+  if (!allDone) confettiLaunched = false;
+  if (allDone)  launchConfetti();
+
   let html = '';
 
   // Progress banner
@@ -597,6 +634,28 @@ function choreCard(c) {
 }
 
 function maybeUpdateKidSelect() { /* kid select is not visible during today view */ }
+
+let confettiLaunched = false;
+function launchConfetti() {
+  if (confettiLaunched) return;
+  confettiLaunched = true;
+  const colors = ['#f472b6','#c084fc','#60a5fa','#34d399','#fbbf24','#f87171','#a78bfa'];
+  for (let i = 0; i < 60; i++) {
+    const el = document.createElement('div');
+    const size = 6 + Math.random() * 8;
+    el.className = 'confetti-piece';
+    el.style.cssText = `
+      left:${Math.random()*100}vw; top:-12px;
+      width:${size}px; height:${size}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      border-radius:${Math.random()>0.4?'50%':'3px'};
+      --dur:${1.4+Math.random()*1.4}s;
+      --delay:${Math.random()*0.6}s;
+    `;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 3000);
+  }
+}
 
 // ── Parent today ───────────────────────────────────────────────────────
 function renderParentToday(el, ds) {
@@ -756,13 +815,13 @@ function renderHistory() {
       </div>
       <div class="hist-kid-row">
         <div class="hkr-emoji">🦊</div>
-        <div class="hkr-bar"><div class="hkr-fill" style="width:${Math.round(f.pct*100)}%;background:#3b82f6"></div></div>
-        <div class="hkr-pct" style="color:#3b82f6">${f.done}/${f.total}</div>
+        <div class="hkr-bar"><div class="hkr-fill" style="width:${Math.round(f.pct*100)}%;background:${KIDS.freddy.color}"></div></div>
+        <div class="hkr-pct" style="color:${KIDS.freddy.color}">${f.done}/${f.total}</div>
       </div>
       <div class="hist-kid-row">
         <div class="hkr-emoji">🌸</div>
-        <div class="hkr-bar"><div class="hkr-fill" style="width:${Math.round(c.pct*100)}%;background:#ec4899"></div></div>
-        <div class="hkr-pct" style="color:#ec4899">${c.done}/${c.total}</div>
+        <div class="hkr-bar"><div class="hkr-fill" style="width:${Math.round(c.pct*100)}%;background:${KIDS.claire.color}"></div></div>
+        <div class="hkr-pct" style="color:${KIDS.claire.color}">${c.done}/${c.total}</div>
       </div>
     </div>`;
   });

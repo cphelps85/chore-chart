@@ -355,8 +355,20 @@ function generatePlan(ws) {
 async function ensurePlan(ws) {
   if (weeklyPlans[ws]) return;
   const snap = await getDoc(uDoc('chore_plans', ws));
-  weeklyPlans[ws] = snap.exists() ? snap.data() : generatePlan(ws);
-  if (!snap.exists()) await setDoc(uDoc('chore_plans', ws), weeklyPlans[ws]);
+  if (!snap.exists()) {
+    weeklyPlans[ws] = generatePlan(ws);
+    await setDoc(uDoc('chore_plans', ws), weeklyPlans[ws]);
+    return;
+  }
+  const plan = snap.data();
+  // Upgrade existing plans: fill in any split/shared chores added since the plan was saved
+  const fresh = generatePlan(ws);
+  let dirty = false;
+  CHORES.filter(c => c.who === 'split' || c.who === 'shared').forEach(c => {
+    if (!plan[c.id]) { plan[c.id] = fresh[c.id]; dirty = true; }
+  });
+  if (dirty) await setDoc(uDoc('chore_plans', ws), plan);
+  weeklyPlans[ws] = plan;
 }
 
 // ── Load / Save ───────────────────────────────────────────────────────

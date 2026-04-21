@@ -253,7 +253,7 @@ const KIDS = {
 //   'weekly'           → specific dow(s) in settings.choreDays[id]
 
 const CHORES = [
-  { id:'feed-dogs',    name:'Feed the Dogs',      emoji:'🐕', who:'claire', schedule:'daily',       desc:'Fill dog bowls with food & fresh water' },
+  { id:'feed-dogs',    name:'Feed the Dogs',      emoji:'🐕', who:'split',  schedule:'split',       desc:'Fill dog bowls with food & fresh water' },
   { id:'feed-birds',   name:'Feed the Birds',      emoji:'🐦', who:'split',  schedule:'split',       desc:'Fill the bird feeder' },
   { id:'towels',       name:'Change Hand Towels',  emoji:'🚿', who:'shared', schedule:'weekly',      desc:'Replace hand towels in the bathrooms' },
   { id:'toilet-paper', name:'Check Toilet Paper',  emoji:'🧻', who:'shared', schedule:'weekly',      desc:'Check & refill toilet paper if needed' },
@@ -334,6 +334,14 @@ function generatePlan(ws) {
     { day: birdDays[1], kid: firstKid === 'freddy' ? 'claire' : 'freddy' },
   ];
 
+  // Dog feeding: all 7 days split ~4/3; who gets the extra day alternates weekly
+  const firstDogKid = weekNum % 2 === 0 ? 'freddy' : 'claire';
+  const secondDogKid = firstDogKid === 'freddy' ? 'claire' : 'freddy';
+  plan['feed-dogs'] = [0,1,2,3,4,5,6].map(day => ({
+    day,
+    kid: day % 2 === 0 ? firstDogKid : secondDogKid,
+  }));
+
   // Shared chores: deterministic alternation so it's always fair
   CHORES.filter(c => c.who === 'shared').forEach((chore, i) => {
     const kid = (weekNum + i) % 2 === 0 ? 'freddy' : 'claire';
@@ -409,7 +417,7 @@ function getChoresForKid(kidId, ds) {
       }
     }
     else if (chore.who === 'split') {
-      const entries = plan['feed-birds'] || [];
+      const entries = plan[chore.id] || [];
       assigned = entries.some(e => e.kid === kidId && e.day === dow);
     }
     if (!assigned) continue;
@@ -889,6 +897,20 @@ function renderSettings() {
   html += `<div class="sh">This Week's Assignments</div>`;
   html += `<div class="s-card">`;
 
+  // Dog feeding split summary
+  const dogEntries = plan['feed-dogs'] || [];
+  if (dogEntries.length) {
+    const byDogKid = { freddy:[], claire:[] };
+    dogEntries.forEach(e => byDogKid[e.kid]?.push(DAY_SHORT[e.day]));
+    ['freddy','claire'].forEach(kid => {
+      if (!byDogKid[kid].length) return;
+      html += `<div class="s-row">
+        <div><div class="s-label">🐕 Feed Dogs — ${byDogKid[kid].join(', ')}</div></div>
+        <span class="badge ${kid}">${KIDS[kid].emoji} ${KIDS[kid].name}</span>
+      </div>`;
+    });
+  }
+
   const birdEntries = plan['feed-birds'] || [];
   birdEntries.forEach(e => {
     html += `<div class="s-row">
@@ -923,6 +945,10 @@ function renderSettings() {
       </button>
     </div>`;
   });
+  html += `<div class="s-row">
+    <div class="s-label">🐕 Dog feeding days</div>
+    <button class="icon-btn" data-action="swap-dogs">🔄 Swap kids</button>
+  </div>`;
   html += `<div class="s-row">
     <div class="s-label">🐦 Bird feeding days</div>
     <button class="icon-btn" data-action="swap-birds">🔄 Swap kids</button>
@@ -971,6 +997,13 @@ function renderSettings() {
         await savePlan(ws);
         renderSettings();
       }
+    }
+    else if (action === 'swap-dogs') {
+      (weeklyPlans[ws]['feed-dogs'] || []).forEach(e => {
+        e.kid = e.kid === 'freddy' ? 'claire' : 'freddy';
+      });
+      await savePlan(ws);
+      renderSettings();
     }
     else if (action === 'swap-birds') {
       (weeklyPlans[ws]['feed-birds'] || []).forEach(e => {
